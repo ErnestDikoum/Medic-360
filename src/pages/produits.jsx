@@ -12,7 +12,7 @@ const Produits = () => {
   const getProduits = async () => {
     try {
       setLoading(true);
-      const res = await api.get('api/produits');
+      const res = await api.get('/produits');
       setProduits(res.data);
       setLoading(false);
     } catch (err) {
@@ -40,9 +40,9 @@ const Produits = () => {
       };
 
       if (editing) {
-        await api.put(`api/produits/${editing.id}`, payload);
+        await api.put(`/produits/${editing.id}`, payload);
       } else {
-        await api.post('api/produits', payload);
+        await api.post('/produits', payload);
       }
 
       setForm({ nom: '', prix: '', quantite: '' });
@@ -66,7 +66,7 @@ const Produits = () => {
     if (!window.confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
     try {
       setLoading(true);
-      await api.delete(`api/produits/${id}`);
+      await api.delete(`/produits/${id}`);
       await getProduits();
       setLoading(false);
       setError('');
