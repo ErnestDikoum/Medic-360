@@ -16,6 +16,7 @@ const Produits = () => {
       setProduits(res.data);
       setLoading(false);
     } catch (err) {
+      console.error(err.response?.data || err);
       setError('Impossible de récupérer les produits');
       setLoading(false);
     }
@@ -30,18 +31,32 @@ const Produits = () => {
     e.preventDefault();
     try {
       setLoading(true);
+
+      // Convertir prix et quantite en nombres pour Laravel
+      const payload = {
+        nom: form.nom,
+        prix: Number(form.prix),
+        quantite: Number(form.quantite),
+      };
+
       if (editing) {
-        await api.put(`/produits/${editing.id}`, form);
+        await api.put(`/produits/${editing.id}`, payload);
       } else {
-        await api.post('/produits', form);
+        await api.post('/produits', payload);
       }
+
       setForm({ nom: '', prix: '', quantite: '' });
       setEditing(null);
-      getProduits();
-      setLoading(false);
+      await getProduits();
       setError('');
+      setLoading(false);
     } catch (err) {
-      setError('Erreur lors de l\'enregistrement du produit');
+      console.error(err.response?.data || err);
+      if (err.response?.data?.message) {
+        setError(`Erreur : ${err.response.data.message}`);
+      } else {
+        setError('Erreur lors de l\'enregistrement du produit');
+      }
       setLoading(false);
     }
   };
@@ -52,9 +67,11 @@ const Produits = () => {
     try {
       setLoading(true);
       await api.delete(`/produits/${id}`);
-      getProduits();
+      await getProduits();
       setLoading(false);
+      setError('');
     } catch (err) {
+      console.error(err.response?.data || err);
       setError('Erreur lors de la suppression');
       setLoading(false);
     }
