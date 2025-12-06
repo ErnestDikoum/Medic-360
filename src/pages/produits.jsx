@@ -5,36 +5,65 @@ const Produits = () => {
   const [produits, setProduits] = useState([]);
   const [form, setForm] = useState({ nom: '', prix: '', quantite: '' });
   const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  // Récupérer tous les produits
   const getProduits = async () => {
-    const res = await api.get('/produits');
-    setProduits(res.data);
+    try {
+      setLoading(true);
+      const res = await api.get('/produits');
+      setProduits(res.data);
+      setLoading(false);
+    } catch (err) {
+      setError('Impossible de récupérer les produits');
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     getProduits();
   }, []);
 
+  // Ajouter ou modifier un produit
   const saveProduit = async (e) => {
     e.preventDefault();
-    if (editing) {
-      await api.put(`/produits/${editing.id}`, form);
-    } else {
-      await api.post('/produits', form);
+    try {
+      setLoading(true);
+      if (editing) {
+        await api.put(`/produits/${editing.id}`, form);
+      } else {
+        await api.post('/produits', form);
+      }
+      setForm({ nom: '', prix: '', quantite: '' });
+      setEditing(null);
+      getProduits();
+      setLoading(false);
+      setError('');
+    } catch (err) {
+      setError('Erreur lors de l\'enregistrement du produit');
+      setLoading(false);
     }
-    setForm({ nom: '', prix: '', quantite: '' });
-    setEditing(null);
-    getProduits();
   };
 
+  // Supprimer un produit
   const deleteProduit = async (id) => {
-    await api.delete(`/produits/${id}`);
-    getProduits();
+    if (!window.confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
+    try {
+      setLoading(true);
+      await api.delete(`/produits/${id}`);
+      getProduits();
+      setLoading(false);
+    } catch (err) {
+      setError('Erreur lors de la suppression');
+      setLoading(false);
+    }
   };
 
+  // Préparer l’édition
   const editProduit = (p) => {
     setEditing(p);
-    setForm(p);
+    setForm({ nom: p.nom, prix: p.prix, quantite: p.quantite });
   };
 
   return (
@@ -43,6 +72,9 @@ const Produits = () => {
         <h1 className="text-3xl font-bold text-center text-blue-700 mb-8">
           Gestion des Produits Pharmaceutique
         </h1>
+
+        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
+        {loading && <p className="text-gray-600 mb-4 text-center">Chargement...</p>}
 
         {/* Formulaire */}
         <div className="bg-white shadow-md rounded-xl p-6 mb-10">
