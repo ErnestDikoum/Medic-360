@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Produits = () => {
@@ -10,16 +8,19 @@ const Produits = () => {
   const [form, setForm] = useState({ nom: "", prix: "", quantite: "" });
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
-  // 🔹 Récupérer tous les produits
+  // Récupérer les produits
   const getProduits = async () => {
     try {
       setLoading(true);
       const res = await api.get("/produits");
       setProduits(res.data);
+      setLoading(false);
     } catch (err) {
+      setError("Impossible de récupérer les produits");
       toast.error("Impossible de récupérer les produits");
-    } finally {
       setLoading(false);
     }
   };
@@ -28,7 +29,7 @@ const Produits = () => {
     getProduits();
   }, []);
 
-  // 🔹 Ajouter ou modifier un produit
+  // Ajouter ou modifier un produit
   const saveProduit = async (e) => {
     e.preventDefault();
     try {
@@ -43,14 +44,16 @@ const Produits = () => {
       setForm({ nom: "", prix: "", quantite: "" });
       setEditing(null);
       getProduits();
+      setError("");
+      setLoading(false);
     } catch (err) {
+      setError("Erreur lors de l'enregistrement du produit");
       toast.error("Erreur lors de l'enregistrement du produit");
-    } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Supprimer un produit
+  // Supprimer un produit
   const deleteProduit = async (id) => {
     if (!window.confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
     try {
@@ -58,46 +61,60 @@ const Produits = () => {
       await api.delete(`/produits/${id}`);
       toast.success("Produit supprimé !");
       getProduits();
+      setLoading(false);
     } catch (err) {
+      setError("Erreur lors de la suppression");
       toast.error("Erreur lors de la suppression");
-    } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Préparer l’édition
+  // Préparer l’édition
   const editProduit = (p) => {
     setEditing(p);
     setForm({ nom: p.nom, prix: p.prix, quantite: p.quantite });
   };
 
+  // Filtrage par recherche
+  const filteredProduits = produits.filter((p) =>
+    p.nom.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-green-50 py-10 px-4">
-      <ToastContainer position="top-right" autoClose={3000} />
-
+      <ToastContainer position="top-right" autoClose={2500} />
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-4xl font-bold text-center text-green-700 mb-8">
+        <h1 className="text-3xl font-bold text-center text-green-700 mb-8">
           Gestion des Produits Pharmaceutiques
         </h1>
 
+        {error && (
+          <p className="text-red-600 mb-4 text-center font-semibold">{error}</p>
+        )}
+        {loading && (
+          <p className="text-gray-600 mb-4 text-center font-semibold">
+            Chargement...
+          </p>
+        )}
+
         {/* Formulaire */}
-        <div className="bg-white shadow-lg rounded-xl p-6 mb-10">
+        <div className="bg-white shadow-md rounded-xl p-6 mb-6">
           <form
             onSubmit={saveProduit}
-            className="grid md:grid-cols-4 gap-4 items-end"
+            className="grid md:grid-cols-3 gap-4 items-end"
           >
             <input
               type="text"
               placeholder="Nom"
-              className="border p-3 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
+              className="border p-2 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
               value={form.nom}
               onChange={(e) => setForm({ ...form, nom: e.target.value })}
               required
             />
             <input
               type="number"
-              placeholder="Prix (FCFA)"
-              className="border p-3 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
+              placeholder="Prix"
+              className="border p-2 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
               value={form.prix}
               onChange={(e) => setForm({ ...form, prix: e.target.value })}
               required
@@ -105,17 +122,16 @@ const Produits = () => {
             <input
               type="number"
               placeholder="Quantité"
-              className="border p-3 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
+              className="border p-2 rounded-md w-full focus:ring-2 focus:ring-green-400 focus:outline-none"
               value={form.quantite}
               onChange={(e) => setForm({ ...form, quantite: e.target.value })}
               required
             />
 
-            <div className="flex gap-2 md:col-span-1">
+            <div className="md:col-span-3 flex justify-end gap-2 mt-2">
               <button
                 type="submit"
-                disabled={loading}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold w-full"
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
               >
                 {editing ? "Modifier" : "Ajouter"}
               </button>
@@ -126,7 +142,7 @@ const Produits = () => {
                     setEditing(null);
                     setForm({ nom: "", prix: "", quantite: "" });
                   }}
-                  className="bg-gray-400 text-white px-6 py-3 rounded-lg hover:bg-gray-500 transition font-semibold w-full"
+                  className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
                 >
                   Annuler
                 </button>
@@ -135,19 +151,30 @@ const Produits = () => {
           </form>
         </div>
 
+        {/* Recherche */}
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Rechercher un produit..."
+            className="border p-2 rounded-md w-full md:w-1/3 focus:ring-2 focus:ring-green-400 focus:outline-none"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
         {/* Table */}
-        <div className="overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-200">
+        <div className="overflow-x-auto bg-white rounded-xl shadow-md border border-gray-100">
           <table className="w-full text-sm text-left">
-            <thead className="bg-green-100 text-green-800">
+            <thead className="bg-green-100 text-green-700">
               <tr>
-                <th className="p-4 font-semibold">Nom</th>
-                <th className="p-4 font-semibold">Prix</th>
-                <th className="p-4 font-semibold">Quantité</th>
-                <th className="p-4 font-semibold text-center">Actions</th>
+                <th className="p-3 font-semibold">Nom</th>
+                <th className="p-3 font-semibold">Prix</th>
+                <th className="p-3 font-semibold">Quantité</th>
+                <th className="p-3 font-semibold text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {produits.length === 0 ? (
+              {filteredProduits.length === 0 ? (
                 <tr>
                   <td
                     colSpan="4"
@@ -157,24 +184,24 @@ const Produits = () => {
                   </td>
                 </tr>
               ) : (
-                produits.map((p) => (
+                filteredProduits.map((p) => (
                   <tr
                     key={p.id}
                     className="border-t hover:bg-green-50 transition"
                   >
-                    <td className="p-4">{p.nom}</td>
-                    <td className="p-4">{p.prix} FCFA</td>
-                    <td className="p-4">{p.quantite}</td>
-                    <td className="p-4 text-center space-x-3">
+                    <td className="p-3">{p.nom}</td>
+                    <td className="p-3">{p.prix} FCFA</td>
+                    <td className="p-3">{p.quantite}</td>
+                    <td className="p-3 text-center space-x-3">
                       <button
                         onClick={() => editProduit(p)}
-                        className="text-blue-600 hover:text-blue-800 text-lg"
+                        className="text-blue-600 hover:text-blue-800"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => deleteProduit(p.id)}
-                        className="text-red-600 hover:text-red-800 text-lg"
+                        className="text-red-600 hover:text-red-800"
                       >
                         🗑️
                       </button>
